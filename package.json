@@ -5,7 +5,7 @@
   "author": "Tyler Rockwood",
   "main": "dist/index.js",
   "module": "dist/watchable.esm.js",
-  "typings": "dist/index.d.ts",
+  "typings": "dist/types/index.d.ts",
   "repository": "github:shortwave/watchable",
   "publishConfig": {
     "access": "public"
