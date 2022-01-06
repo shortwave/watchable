@@ -156,9 +156,7 @@ export class WatchableSubject<T> extends Watchable<T> {
   update(elem: T): void {
     if (this.currentValue && this.currentValue.current === elem) return;
     this.currentValue = { current: elem };
-    for (const sub of this.subscriptions) {
-      sub(elem);
-    }
+    this.subscriptions.forEach((cb) => cb(elem));
   }
 
   watch(watch: WatcherFn<T>): Unsubscribe {

@@ -24,10 +24,9 @@ export class Subscriptions<CallbackType> {
     return this.callbacks.size === 0;
   }
 
-  [Symbol.iterator]() {
-    // Support synchronous removing by making a copy.
-    const copy = [...this.callbacks];
-    return copy[Symbol.iterator]();
+  forEach(callback: (cb: CallbackType) => void): void {
+    // Make a copy to support sync removal.
+    return Array.from(this.callbacks).forEach(callback);
   }
 }
 
