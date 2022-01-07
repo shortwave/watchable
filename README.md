@@ -16,11 +16,9 @@ Watchables are objects that store your application state. They can be subscribed
 
 A watchable can be used a simple way to expose state into your React components without needing a full blown state management system like Redux or MobX.
 
-See our [blog post](https://www.shortwave.com/blog/) for more background on how this library came to be.
+See our [blog post](https://www.shortwave.com/blog/watchables-realtime-react-without-redux/) for more background on how this library came to be.
 
 ## Basic usage
-
-See the example/ and tests/ directory for a full listing!
 
 ```typescript
 import { WatchableSubject } from '@shortwave/watchable';
@@ -43,7 +41,108 @@ v.update(1);
 // no output - the value is memoized
 ```
 
-<!-- TODO(rockwotj): We should probably put a full API listing in the readme. -->
+## Advanced usage
+
+See the example/ and tests/ directories for the full API and more examples.
+
+#### `watchable.map(mapper: (t: T) => U): Watchable<U>`
+
+Useful for transforming internal state to external state or dropping private data.
+
+```typescript
+const v = WatchableSubject.of(0);
+const u = v.map((n) => `Count is ${n}`);
+u.watch((s) => console.log(s));
+// output: Count is 0
+v.update(6);
+// output: Count is 6
+```
+
+#### `watchable.withHooks({setup, tearDown}): Watchable<U>`
+
+Allows for tracking subscriptions so you can cleanup other resources when the value isn't being watched anymore (for example, setting up and tearing down a websocket connection).
+
+```typescript
+const v = WatchableSubject.of(0);
+const u = v.withHooks({
+  setup: () => console.log("First watcher started!"),
+  tearDown: () => console.log("Last watcher stopped!"),
+});
+const unsub1 = u.watch((s) => { /* noop */ });
+// output: First watcher started!
+const unsub2 = u.watch((s) => { /* noop */ });
+unsub1();
+// no output
+unsub2();
+// output: Last watcher stopped!
+```
+
+#### `watchable.toPromise()`
+
+Useful in imperative code an async callback where you need to access a value that may still be loading.
+
+```typescript
+const v = WatchableSubject.empty<number>();
+v.toPromise().then((value) => {
+  console.log(`Count is ${value}`);
+});
+setTimeout(() => {
+  v.update(0);
+  // output: Count is 0
+  v.update(1);
+  // No output - promise is resolved already
+}, 150);
+```
+
+#### `watchable.snapshot()`
+
+Can be used to get only the current value, or the first value after loading. An example of where this can be used is to perform searches against frequently updated values.
+
+```typescript
+const v = WatchableSubject.of<number>(1);
+const snap = v.snapshot();
+console.log(`Snapshot value ${snap.getValue()}`);
+// output: Snapshot value 1
+v.update(2);
+console.log(`Snapshot value ${snap.getValue()}`);
+// output: Snapshot value 1
+```
+
+#### `partialCombineWatchable`
+
+We frequently use this to create "batch" versions of hooks, this allows for combining a map of several watchables into one. This omits any empty watchables.
+
+```typescript
+import {partialCombineWatchable, Watchable, WatchableSubject} from "@shortwave/watchable";
+
+const mapOfWatchables: Map<string, Watchable<number>> = new Map([
+  ['a', WatchableSubject.of(1)],
+  ['b', WatchableSubject.of(2)],
+  ['c', WatchableSubject.empty()],
+]);
+const watchableMap: Watchable<Map<string, number>> = partialCombineWatchable(mapOfWatchables);
+console.log(watchableMap.getValue());
+// output: Map([['a', 1], ['b', 2]])
+```
+
+Here's an example of using this to create a "batch" version of a hook.
+
+```typescript
+import {useMemoizedWatchable, partialCombineWatchable} from "@shortwave/watchable";
+
+function useBatchOnlineStatusService(users: UserId[]): Map<UserId, OnlineStatus> {
+  const service = useOnlineStatusService();
+  const value = useMemoizedWatchable(() => {
+    const statusByUser: Map<UserId, Watchable<OnlineStatus>> = new Map(users.map((userId) =>
+      [userId, service.watchOnlineStatus(userId)]
+    ));
+    return partialCombineWatchable(statusByUser);
+  }, [service, users]);
+  // partialCombineWatchable is never empty, but we need to make typescript happy and provide
+  // a default loading value.
+  return value ?? new Map();
+}
+```
 
 ## Contributing
 
