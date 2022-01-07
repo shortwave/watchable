@@ -77,10 +77,6 @@ export class WatchableMap<K, V> {
     }
   }
 
-  [Symbol.iterator](): IterableIterator<[K, WatchableSubject<V>]> {
-    return this.underlying[Symbol.iterator]();
-  }
-
   private getOrCreateSubject(key: K): WatchableSubject<V> {
     const existing = this.underlying.get(key);
     if (existing) return existing;

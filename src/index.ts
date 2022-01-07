@@ -8,6 +8,7 @@ import {
   useWatchable,
   useExplicitWatchable,
 } from './hooks';
+import { WatchableMap } from './watchableMap';
 
 export {
   Watchable,
@@ -16,4 +17,5 @@ export {
   useExplicitWatchable,
   useWatchable,
   useMemoizedWatchable,
+  WatchableMap,
 };
